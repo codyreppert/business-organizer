@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# build
+dist/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# uploads
+public/uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+tsconfig.tsbuildinfo
+
+# Prisma
+prisma/migrations/dev.db

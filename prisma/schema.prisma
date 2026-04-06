@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BusinessAsset {
+  id          String  @id @default(uuid())
+
+  name        String
+  category    String  // "equipment" | "technology"
+  subcategory String? // "machinery" | "tools" | "office" | "computer" | "phone" | "software" | "other"
+
+  brand        String?
+  model        String?
+  serialNumber String? @map("serial_number")
+
+  purchaseDate  DateTime? @map("purchase_date") @db.Date
+  purchasePrice Decimal?  @map("purchase_price") @db.Decimal(10, 2)
+
+  warrantyStart DateTime? @map("warranty_start") @db.Date
+  warrantyEnd   DateTime? @map("warranty_end") @db.Date
+
+  // Depreciation
+  depreciationMethod String?  @map("depreciation_method") // "straight-line" | "double-declining" | "none"
+  usefulLifeYears    Int?     @map("useful_life_years")
+  salvageValue       Decimal? @map("salvage_value") @db.Decimal(10, 2)
+
+  status String  @default("active") // "active" | "retired" | "disposed"
+  notes  String?
+
+  // Fields populated by AI inference that have not yet been confirmed by the user.
+  // Once the user confirms a value, the field name is removed from this array.
+  inferredFields String[] @default([]) @map("inferred_fields")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  documents Document[]
+
+  @@map("business_assets")
+}
+
+model BusinessTrip {
+  id String @id @default(uuid())
+
+  clientOrProject String? @map("client_or_project")
+  description     String?
+  destination     String?
+
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+
+  // Mileage (IRS deduction)
+  miles       Decimal? @db.Decimal(10, 2)
+  mileageRate Decimal? @map("mileage_rate") @db.Decimal(6, 4) // e.g. 0.6700 (2024 IRS rate)
+
+  // Per diem
+  perDiemDays Int?     @map("per_diem_days")
+  perDiemRate Decimal? @map("per_diem_rate") @db.Decimal(8, 2)
+
+  notes String?
+
+  inferredFields String[] @default([]) @map("inferred_fields")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  expenses  TripExpense[]
+  documents Document[]
+
+  @@map("business_trips")
+}
+
+model TripExpense {
+  id     String @id @default(uuid())
+  tripId String @map("trip_id")
+
+  category    String  // "meals" | "lodging" | "transport" | "supplies" | "software" | "other"
+  amount      Decimal @db.Decimal(10, 2)
+  date        DateTime @db.Date
+  merchant    String?
+  description String?
+
+  inferredFields String[] @default([]) @map("inferred_fields")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  trip      BusinessTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@map("trip_expenses")
+}
+
+model StandaloneExpense {
+  id String @id @default(uuid())
+
+  category        String  // "meals" | "lodging" | "transport" | "supplies" | "software" | "other"
+  amount          Decimal  @db.Decimal(10, 2)
+  date            DateTime @db.Date
+  merchant        String?
+  description     String?
+  businessPurpose String?  @map("business_purpose")
+  reimbursable    Boolean  @default(false)
+
+  inferredFields String[] @default([]) @map("inferred_fields")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  documents Document[]
+
+  @@map("standalone_expenses")
+}
+
+model Conversation {
+  id    String  @id @default(uuid())
+  title String?
+
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  messages  ChatMessage[]
+
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String @id @default(uuid())
+  conversationId String @map("conversation_id")
+
+  role        String // "user" | "assistant"
+  content     String
+  toolCalls   Json?  @map("tool_calls")
+  toolResults Json?  @map("tool_results")
+
+  createdAt    DateTime     @default(now()) @map("created_at")
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model Document {
+  id String @id @default(uuid())
+
+  // Polymorphic attachment — at most one FK should be set
+  assetId             String? @map("asset_id")
+  tripId              String? @map("trip_id")
+  expenseId           String? @map("expense_id")
+  standaloneExpenseId String? @map("standalone_expense_id")
+
+  name          String
+  type          String  // "receipt" | "invoice" | "contract" | "warranty" | "other"
+  filePath      String  @map("file_path")
+  fileSizeBytes Int?    @map("file_size_bytes")
+  mimeType      String? @map("mime_type")
+
+  inferredFields String[] @default([]) @map("inferred_fields")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  asset             BusinessAsset?    @relation(fields: [assetId], references: [id])
+  trip              BusinessTrip?     @relation(fields: [tripId], references: [id])
+  tripExpense       TripExpense?      @relation(fields: [expenseId], references: [id])
+  standaloneExpense StandaloneExpense? @relation(fields: [standaloneExpenseId], references: [id])
+
+  @@map("documents")
+}

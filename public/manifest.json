@@ -1,0 +1,42 @@
+{
+  "name": "Business Organizer",
+  "short_name": "BizOrg",
+  "description": "Track business assets, trips, and expenses for tax purposes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Expense",
+      "url": "/expenses/new",
+      "description": "Record a new expense"
+    },
+    {
+      "name": "Add Trip",
+      "url": "/trips/new",
+      "description": "Log a new business trip"
+    },
+    {
+      "name": "AI Ingest",
+      "url": "/ingest",
+      "description": "Scan a receipt with AI"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"]
+}
