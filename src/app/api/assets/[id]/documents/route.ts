@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile } from 'fs/promises'
+import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { db } from '@/lib/db'
+import { validateUpload, sanitizeFilename } from '@/lib/utils/upload'
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const asset = await db.businessAsset.findUnique({ where: { id: params.id } })
@@ -18,13 +19,17 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'file is required' }, { status: 400 })
   }
 
+  const validationError = validateUpload(file)
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 })
+  }
+
   const uploadDir = path.join(process.cwd(), 'public', 'uploads', params.id)
-  const { mkdir } = await import('fs/promises')
   await mkdir(uploadDir, { recursive: true })
 
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
-  const filename = `${Date.now()}-${file.name}`
+  const filename = sanitizeFilename(file.name)
   const filePath = path.join(uploadDir, filename)
   await writeFile(filePath, buffer)
 

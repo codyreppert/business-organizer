@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { rateLimit, rateLimitResponse } from '@/lib/utils/rateLimit'
 
 const client = new Anthropic()
 
@@ -18,6 +19,11 @@ If a field cannot be determined from the receipt, omit it from the response.
 Return only valid JSON.`
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!rateLimit(`ingest:${ip}`, 10, 60_000)) {
+    return rateLimitResponse()
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
   }

@@ -5,6 +5,7 @@ import { anthropic } from '@/lib/ai'
 import Anthropic from '@anthropic-ai/sdk'
 import type { Prisma } from '@prisma/client'
 import { IRS_MILEAGE_RATE_2024 } from '@/lib/utils/mileage'
+import { rateLimit, rateLimitResponse } from '@/lib/utils/rateLimit'
 
 // ── Tool definitions ───────────────────────────────────────────────────────────
 
@@ -515,6 +516,11 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!rateLimit(`chat:${ip}`, 30, 60_000)) {
+    return rateLimitResponse()
+  }
+
   const conversation = await db.conversation.findUnique({
     where: { id: params.id },
     include: { messages: { orderBy: { createdAt: 'asc' } } },
