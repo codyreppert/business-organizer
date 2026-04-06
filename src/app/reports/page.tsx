@@ -1,4 +1,6 @@
 import { db } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
 import { formatPrice } from '@/lib/utils/price'
 import { calcTripTotal } from '@/lib/utils/trip'
 import ReportDownloads from '@/components/ReportDownloads'
